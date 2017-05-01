@@ -296,8 +296,8 @@ window.headertag.partnerScopes.push(function() {
         var __bidTransformConfig = {          // Default rounding configuration
             "floor": 0,                     // Minimum acceptable bid price
             "inputCentsMultiplier": 100,    // Multiply input bids by this to get cents
-            "outputCentsDivisor": 100,      // Divide output bids in cents by this
-            "outputPrecision": 2,           // Decimal places in output
+            "outputCentsDivisor": 1,      // Divide output bids in cents by this
+            "outputPrecision": 0,           // Decimal places in output
             "roundingType": 1,              // Rounding method (1 is floor)
             "buckets": [{                   // Buckets specifying rounding steps
                 "max": 2000,                // Maximum number of cents for this bucket
