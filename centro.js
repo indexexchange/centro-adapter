@@ -232,9 +232,12 @@ window.headertag.partnerScopes.push(function() {
         //? }
 
         var yourBidder = new Partner(config);
+
+        window.CentroHtb = {};
+        window.CentroHtb.render = yourBidder.renderAd;
+
         window.headertag[PARTNER_ID] = {};
         window.headertag[PARTNER_ID].callback = yourBidder.responseCallback;
-        window.headertag[PARTNER_ID].render = yourBidder.renderAd;
 
         callback(null, yourBidder);
     }
@@ -293,10 +296,10 @@ window.headertag.partnerScopes.push(function() {
          * endpoint and expected by the DFP line item targeting. See
          * bid-rounding-transformer.js for more information.
          */
-        var __bidTransformConfig = {          // Default rounding configuration
+        var __bidTransformConfig = {        // Default rounding configuration
             "floor": 0,                     // Minimum acceptable bid price
             "inputCentsMultiplier": 100,    // Multiply input bids by this to get cents
-            "outputCentsDivisor": 1,      // Divide output bids in cents by this
+            "outputCentsDivisor": 1,        // Divide output bids in cents by this
             "outputPrecision": 0,           // Decimal places in output
             "roundingType": 1,              // Rounding method (1 is floor)
             "buckets": [{                   // Buckets specifying rounding steps
