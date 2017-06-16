@@ -58,7 +58,9 @@ window.headertag.partnerScopes.push(function() {
 
     var Utils = window.headertag.Utils;
     var Network = window.headertag.Network;
+    var Promise = window.headertag.Promise;
     var BidRoundingTransformer = window.headertag.BidRoundingTransformer;
+    var GlobalConfig = window.headertagconfig || {};
 
     function validateTargetingType(tt) {
         return typeof tt === 'string' && SUPPORTED_TARGETING_TYPES[tt];
@@ -95,6 +97,13 @@ window.headertag.partnerScopes.push(function() {
          */
 
         /* PUT CODE HERE */
+
+        if (config.hasOwnProperty('timeout') && (
+            !Utils.isNumber(config.timeout) ||
+            config.timeout < 0
+            )) {
+            err.push('timeout must be a real number');
+        }
 
         /* -------------------------------------------------------------------------- */
 
@@ -133,6 +142,37 @@ window.headertag.partnerScopes.push(function() {
          */
 
         /* PUT CODE HERE */
+
+                if (typeof config.xSlots[xSlotName] !== 'object') {
+                    err.push('xSlot must be an object');
+                }
+
+                if (!config.xSlots[xSlotName].hasOwnProperty('placement') ||
+                    !config.xSlots[xSlotName].placement ||
+                    isNaN(1 * config.xSlots[xSlotName].placement.toString())
+                ) {
+                    err.push('placement must be defined and must be a number or a number like string');
+                }
+
+                if (config.xSlots[xSlotName].hasOwnProperty('size') && (
+                    !Utils.isArray(config.xSlots[xSlotName].size) ||
+                    config.xSlots[xSlotName].size.length !== 2 ||
+                    !Utils.isNumber(config.xSlots[xSlotName].size[0]) ||
+                    !Utils.isNumber(config.xSlots[xSlotName].size[1])
+                )) {
+                    err.push('size must be an numbers Array with length 2');
+                }
+
+                if (config.xSlots[xSlotName].hasOwnProperty('timeout') && (
+                    !Utils.isNumber(config.xSlots[xSlotName].timeout) ||
+                    config.xSlots[xSlotName].timeout < 0
+                )) {
+                    err.push('timeout must be a real number');
+                }
+
+                if (config.xSlots[xSlotName].hasOwnProperty('page_url') && !Utils.isString(config.xSlots[xSlotName].page_url)) {
+                    err.push('page_url must be a url string');
+                }
 
         /* -------------------------------------------------------------------------- */
 
@@ -231,18 +271,19 @@ window.headertag.partnerScopes.push(function() {
 
         //? }
 
-        var yourBidder = new Partner(config);
+        var centroBidder = new Centro(config);
 
         window.headertag.CentroHtb = {};
-        window.headertag.CentroHtb.render = yourBidder.renderAd;
+        window.headertag.CentroHtb.render = centroBidder.renderAd;
 
         window.headertag[PARTNER_ID] = {};
-        window.headertag[PARTNER_ID].callback = yourBidder.responseCallback;
+        window.headertag[PARTNER_ID].callback = centroBidder.responseCallback;
 
-        callback(null, yourBidder);
+        callback(null, centroBidder);
     }
 
-    function Partner(config) {
+    function Centro(config) {
+
         var _this = this;
 
         var __targetingType = config.targetingType;
@@ -321,6 +362,7 @@ window.headertag.partnerScopes.push(function() {
          *
          * var roundedBid = bidTransformer.transformBid(rawBid);
          */
+
         __bidTransformer = BidRoundingTransformer(__bidTransformConfig);
 
         /* =============================================================================
@@ -338,6 +380,19 @@ window.headertag.partnerScopes.push(function() {
 
         /* PUT CODE HERE */
 
+        var htSlotMapping = config.mapping;
+        var xSlotsConfig = config.xSlots;
+        var globalTimeout = GlobalConfig.timeout;
+        var adapterTimeout = config.timeout;
+        var callbackName = 'window.headertag["'+PARTNER_ID+'"].callback';
+        var savedSlotsData = {};
+        var adUrl = '//staging.brand-server.com/hb';
+        var stageAdUrl = '//t.brand-server.com/hb';
+
+        if (globalTimeout) {
+            adapterTimeout = adapterTimeout? Math.min(adapterTimeout, globalTimeout) : globalTimeout
+        }
+
         /* -------------------------------------------------------------------------- */
 
         this.getPartnerTargetingType = function getPartnerTargetingType() {
@@ -352,7 +407,87 @@ window.headertag.partnerScopes.push(function() {
             return __supportedOptions;
         };
 
-        function __requestDemandForSlots(htSlotNames, callback){
+        function __requestSlot(xSlotData, sizes, requestTimeout) {
+            return new Promise(function(res){
+                try {
+                    var placement = xSlotData.placement;
+                    var size = xSlotData.size || sizes[0];
+                    var timeout = xSlotData.timeout?
+                        (requestTimeout? Math.min(xSlotData.timeout, requestTimeout) : xSlotData.timeout)
+                        : requestTimeout;
+                    if (timeout && timeout === requestTimeout) {
+                        timeout = requestTimeout * 0.9;
+                    }
+                    var pageUrl = xSlotData.page_url || Utils.getPageUrl();
+                    var uniq = Math.random().toString(16).substr(2);
+                    Network.jsonp({
+                        async: true,
+                        timeout: timeout || 5000,
+                        data: {
+                            s: placement,
+                            adapter: 'indexexchange',
+                            sz: size.join('x'),
+                            url: pageUrl,
+                            callback: callbackName + '("' + uniq + '")',
+                            rnd: uniq
+                        },
+                        url: placement == 28136? stageAdUrl : adUrl,
+                        onSuccess: function () {
+                            try {
+                                var savedSlotData = savedSlotsData[uniq];
+                                delete savedSlotsData[uniq];
+                                if (savedSlotData) {
+                                    if (savedSlotData.sectionID == placement) {
+                                        res(savedSlotData);
+                                    } else {
+                                        res('Requested centro slot placement "' + placement + '" does not match received sectionID "' + savedSlotData.sectionID + '"');
+                                    }
+                                } else {
+                                    res('Unable to get centro slot with placement "' + placement + '", empty response was received');
+                                }
+                            } catch(err) {
+                                res('Unable to get centro slot with placement "' + placement + '", error ' + (err.message || err.toString()) + 'received');
+                            }
+
+                        },
+                        onTimeout: function(){
+                            res('Centro request for placement "' + placement + '" is timeouted');
+                        }
+                    });
+                } catch(err){
+                    res(err.message || err.toString());
+                }
+            });
+        }
+
+        function __requestSlots(htSlotName, sizes, timeout) {
+            var xSlots = htSlotMapping[htSlotName];
+            for (var xSlotData, promises = [], i=0, l=xSlots.length; i<l; i++) {
+                xSlotData = xSlotsConfig[xSlots[i]];
+                if (xSlotData) {
+                    promises.push(__requestSlot(xSlotData, sizes, timeout));
+                }
+            }
+
+            return Promise.all(promises).then(function(res){
+                try {
+                    var bids = [];
+                    for (var i=0, l=res.length; i<l; i++) {
+                        if (Utils.isString(res[i])) {
+                            //? if (DEBUG)
+                            console.log(res[i]);
+                        } else if (res[i].adTag) {
+                            bids.push(res[i]);
+                        }
+                    }
+                    return { slotId: htSlotName, bids: bids };
+                } catch (err) {
+                    return err.message || err.toString();
+                }
+            });
+        }
+
+        function __requestDemandForSlots(htSlotNames, sizes, callback){
 
             /* =============================================================================
              * SECTION F | Request demand from the Module's Ad Server
@@ -391,14 +526,57 @@ window.headertag.partnerScopes.push(function() {
 
             /* PUT CODE HERE */
 
+            for (var promises = [], i=0, l=htSlotNames.length; i<l; i++) {
+                promises.push(__requestSlots(htSlotNames[i], sizes[htSlotNames[i]], adapterTimeout));
+            }
+
+            Promise.all(promises).then(function(slots) {
+                try {
+                    var demand, bid, slotId, sizeId, bidIds, bidValues, storeObject, result = {};
+                    for (var i = 0, l = slots.length; i < l; i++) {
+                        if (slots[i] && slots[i].slotId && slots[i].bids.length) {
+                            demand = {};
+                            slotId = slots[i].slotId;
+                            bidIds = [];
+                            bidValues = [];
+                            for (var j=0, n=slots[i].bids.length; j<n; j++) {
+                                bid = slots[i].bids[j];
+                                storeObject = __creativeStore[bid.sectionID] || {};
+                                sizeId = bid.width + 'x' + bid.height;
+                                storeObject[sizeId] = { ad: bid.adTag };
+                                __creativeStore[bid.sectionID] = storeObject;
+                                bidIds.push(bid.sectionID);
+                                bidValues.push(sizeId + '_' + __bidTransformer.transformBid(bid.value));
+                            }
+
+                            demand[__targetingKeys.idKey] = bidIds.length > 1 ? bidIds : bidIds[0];
+                            demand[__targetingKeys.omKey] = bidValues.length > 1 ? bidValues : bidValues[0];
+                            result[slotId] = { demand: demand };
+                        }
+                    }
+                    callback(null, result);
+                } catch(err) {
+                    callback(err.message || err.toString());
+                }
+            }, function(err) {
+                callback(err.message || err.toString());
+            });
+
             /* -------------------------------------------------------------------------- */
 
         }
 
         this.getDemand = function getDemand(correlator, slots, callback) {
             var htSlotNames = Utils.getDivIds(slots);
+            var demand = {slot: {}};
 
-            __requestDemandForSlots(htSlotNames, function(err, demandForSlots){
+            var sizes = {};
+            var l = slots.length, vpWidth = Utils.getViewportWidth(), vpHeight = Utils.getViewportHeight();
+            while (l--) {
+                sizes[slots[l].getSlotElementId()] = slots[l].getSizes(vpWidth, vpHeight);
+            }
+
+            __requestDemandForSlots(htSlotNames, sizes, function(err, demandForSlots){
                 if (err) {
                     callback(err);
                     return;
@@ -420,18 +598,22 @@ window.headertag.partnerScopes.push(function() {
             });
         };
 
-        this.responseCallback = function(responseObj){
-            /* =============================================================================
-             * SECTION G | Parse Demand from the Module's Ad Server
-             * -----------------------------------------------------------------------------
-             *
-             * Run this function as a callback when the ad server responds with demand.
-             * Store creatives and demand in global objects as needed for processing.
-             */
+        this.responseCallback = function(uniq){
+            return function(responseObj) {
+                /* =============================================================================
+                 * SECTION G | Parse Demand from the Module's Ad Server
+                 * -----------------------------------------------------------------------------
+                 *
+                 * Run this function as a callback when the ad server responds with demand.
+                 * Store creatives and demand in global objects as needed for processing.
+                 */
 
-            /* PUT CODE HERE */
+                /* PUT CODE HERE */
 
-            /* -------------------------------------------------------------------------- */
+                savedSlotsData[uniq] = responseObj;
+
+                /* -------------------------------------------------------------------------- */
+            }
         };
 
         this.renderAd = function(doc, targetingMap, width, height) {
@@ -447,7 +629,7 @@ window.headertag.partnerScopes.push(function() {
             if (doc && targetingMap && width && height) {
                 try {
                     var id = targetingMap[__targetingKeys.idKey][0];
-                    
+
                     var sizeKey = width + 'x' + height;
                     if (window.headertag.sizeRetargeting && window.headertag.sizeRetargeting[sizeKey]){
                         width = window.headertag.sizeRetargeting[sizeKey][0];
