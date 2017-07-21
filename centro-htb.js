@@ -90,7 +90,9 @@ function CentroHtb(configs) {
      */
     function __generateRequestObj(returnParcels) {
         var queryObj = {};
-        var baseUrl = Browser.getProtocol() + '';
+        var baseUrl = Browser.getProtocol() + 't.brand-server.com/hb';
+        //var adUrl = '//staging.brand-server.com/hb';
+        //var stageAdUrl = '//t.brand-server.com/hb';
         var callbackId = System.generateUniqueId();
 
         /* =============================================================================
@@ -150,6 +152,17 @@ function CentroHtb(configs) {
          */
 
         /* PUT CODE HERE */
+
+        var xSlotRef = returnParcels[0] && returnParcels[0].xSlotRef;
+        queryObj = {
+            s: xSlotRef.placement,
+            adapter: 'indexexchange',
+            sz: Size.arrayToString(xSlotRef.size),
+            url: xSlotRef.page_url || Browser.getPageUrl(),
+            callback: callbackId
+            // rnd: System.generateUniqueId()
+            // there is no needed rnd because parameter callback will be always different
+        };
 
         /* -------------------------------------------------------------------------- */
 
@@ -233,13 +246,14 @@ function CentroHtb(configs) {
 
         /* ---------- Proces adResponse and extract the bids into the bids array ------------*/
 
-        var bids = adResponse;
+        var bids = [adResponse];
 
         /* --------------------------------------------------------------------------------- */
 
         for (var i = 0; i < bids.length; i++) {
 
             var curReturnParcel;
+            var bid = bids[i];
 
             for (var j = unusedReturnParcels.length - 1; j >= 0; j--) {
 
@@ -250,7 +264,7 @@ function CentroHtb(configs) {
                  * key to a key that represents the placement in the configuration and in the bid responses.
                  */
 
-                if (unusedReturnParcels[j].someCriteria === bids[i].someCriteria) { // change this
+                if (unusedReturnParcels[j].xSlotRef.placement === (bid.sectionID || '').toString()) { // change this
                     curReturnParcel = unusedReturnParcels[j];
                     unusedReturnParcels.splice(j, 1);
                     break;
@@ -263,11 +277,11 @@ function CentroHtb(configs) {
 
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
 
-            var bidPrice; // the bid price for the given slot
-            var bidWidth; // the width of the given slot
-            var bidHeight; // the height of the given slot
-            var bidCreative; // the creative/adm for the given slot that will be rendered if is the winner.
-            var bidDealId; // the dealId if applicable for this slot.
+            var bidPrice = bid.value * 100; // the bid price for the given slot
+            var bidWidth = bid.width; // the width of the given slot
+            var bidHeight = bid.height; // the height of the given slot
+            var bidCreative = bid.adTag; // the creative/adm for the given slot that will be rendered if is the winner.
+            var bidDealId = ''; // the dealId if applicable for this slot.
             var bidIsPass; // true/false value for if the module returned a pass for this slot.
 
             /* ---------------------------------------------------------------------------------------*/
@@ -401,9 +415,9 @@ function CentroHtb(configs) {
                 pmid: 'ix_cent_dealid'
             },
             lineItemType: Constants.LineItemTypes.ID_AND_SIZE,
-            callbackType: Partner.CallbackTypes.ID, // Callback type, please refer to the readme for details
-            architecture: Partner.Architectures.SRA, // Request architecture, please refer to the readme for details
-            requestType: Partner.RequestTypes.ANY // Request type, jsonp, ajax, or any.
+            callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
+            architecture: Partner.Architectures.MRA, // Request architecture, please refer to the readme for details
+            requestType: Partner.RequestTypes.JSONP // Request type, jsonp, ajax, or any.
         };
         /* ---------------------------------------------------------------------------------------*/
 

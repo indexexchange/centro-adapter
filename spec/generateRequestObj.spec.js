@@ -17,6 +17,7 @@
  * Utilities
  * ---------------------------------- */
 
+
 /**
  * Returns an array of parcels based on all of the xSlot/htSlot combinations defined
  * in the partnerConfig (simulates a session in which all of them were requested).
@@ -126,6 +127,7 @@ describe('generateRequestObj', function () {
     } else {
         for (var i = 0; i < returnParcels.length; i++) {
             requestObject = partnerModule.generateRequestObj([returnParcels[i]]);
+            var returnParcel = returnParcels[i];
 
             /* Simple type checking, should always pass */
             it('MRA - should return a correctly formatted object', function () {
@@ -164,6 +166,34 @@ describe('generateRequestObj', function () {
                     * request params, url, etc.
                     */
                 expect(requestObject).to.exist;
+                expect(requestObject.url).to.be.eql('http://t.brand-server.com/hb');
+                var result = inspector.validate({
+                    type: 'object',
+                    strict: true,
+                    properties: {
+                        s: {
+                            type: 'string',
+                            eq: returnParcel.xSlotRef.placement
+                        },
+                        adapter: {
+                            type: 'string',
+                            eq: 'indexexchange'
+                        },
+                        sz: {
+                            type: 'string',
+                            eq: returnParcel.xSlotRef.size.join('x')
+                        },
+                        url: {
+                            type: 'string',
+                            eq: 'localhost'
+                        },
+                        callback: {
+                            type: 'string'
+                        }
+                    }
+                }, requestObject.data);
+
+                expect(result.valid).to.be.true;
             });
             /* -----------------------------------------------------------------------*/
         }

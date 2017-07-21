@@ -106,7 +106,31 @@ describe('parseResponse', function () {
          * For SRA, this could be mulitple items, for MRA it will always be a single item.
          */
 
-        var adResponseMock1 = []
+        var adResponseMock1 = [{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 250,
+            '_comment': '',
+            'value': 0.2,
+            'width': 300,
+            'sectionID': 54321
+        },{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 600,
+            '_comment': '',
+            'value': 0.2,
+            'width': 300,
+            'sectionID': 12345
+        },{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 90,
+            '_comment': '',
+            'value': 0.2,
+            'width': 728,
+            'sectionID': 654321
+        }];
         /* ------------------------------------------------------------------------*/
 
         /* IF SRA, parse all parcels at once */
@@ -117,7 +141,7 @@ describe('parseResponse', function () {
             for (var i = 0; i < returnParcels1.length; i++) {
 
                 /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock1, [returnParcels1[i]]);
+                if (!partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock1[i], [returnParcels1[i]]);
 
                 var result = inspector.validate({
                     type: 'object',
@@ -185,78 +209,6 @@ describe('parseResponse', function () {
         /* -----------------------------------------------------------------------*/
     });
 
-    describe('should correctly parse passes: ', function () {
-        var returnParcels2 = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-        /* ---------- MODIFY THIS TO MATCH YOUR AD RESPONSE FORMAT ---------------*/
-        /* This is your mock response data.
-         * Should contain an explicit pass in the response and set the pass field
-         * for each of the return parcels.
-         *
-         *  For example:
-         * [{
-         *     "placementId": "54321",
-         *     "sizes": [
-         *         [300, 250]
-         *     ],
-         *     "pass": true,
-         * },
-         * {
-         *     "placementId": "12345",
-         *     "sizes": [
-         *         [300, 600]
-         *     ],
-         *     "pass": true
-         * }]
-         *
-         * The response should contain the response for all of the parcels in the array.
-         * For SRA, this could be mulitple items, for MRA it will always be a single item.
-         */
-
-        var adResponseMock2 = [];
-        /* ------------------------------------------------------------------------*/
-
-        /* IF SRA, parse all parcels at once */
-        if (partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock2, returnParcels2);
-
-        it('each parcel should have the required fields set', function () {
-            for (var i = 0; i < returnParcels2.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock2, [returnParcels2[i]]);
-
-                var result = inspector.validate({
-                    type: 'object',
-                    properties: {
-                        pass: {
-                            type: 'boolean',
-                            eq: true,
-
-                        }
-                    }
-                }, returnParcels2[i]);
-
-                expect(result.valid, result.format()).to.be.true;
-            }
-        });
-
-        /* ---------- ADD MORE TEST CASES TO TEST AGAINST REAL VALUES ------------*/
-        it('each parcel should have the correct values set', function () {
-            for (var i = 0; i < returnParcels2.length; i++) {
-
-                /* Add test cases to test against each of the parcel's set fields
-                 * to make sure the response was parsed correctly.
-                 *
-                 * The parcels have already been parsed and should contain all the
-                 * necessary demand.
-                 */
-
-                expect(returnParcels2[i]).to.exist;
-            }
-        });
-        /* -----------------------------------------------------------------------*/
-    });
-
     describe('should correctly parse deals: ', function () {
         var returnParcels3 = generateReturnParcels(partnerModule.profile, partnerConfig);
 
@@ -291,7 +243,31 @@ describe('parseResponse', function () {
          * For SRA, this could be mulitple items, for MRA it will always be a single item.
          */
 
-        var adResponseMock3 = [];
+        var adResponseMock3 = [{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 250,
+            '_comment': '',
+            'value': 0.2,
+            'width': 300,
+            'sectionID': 54321
+        },{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 600,
+            '_comment': '',
+            'value': 0.2,
+            'width': 300,
+            'sectionID': 12345
+        },{
+            'adTag': "<img src=''/>",
+            'statusMessage': 'Bid available',
+            'height': 90,
+            '_comment': '',
+            'value': 0.2,
+            'width': 728,
+            'sectionID': 654321
+        }];
         /* ------------------------------------------------------------------------*/
 
         /* IF SRA, parse all parcels at once */
@@ -302,7 +278,7 @@ describe('parseResponse', function () {
             for (var i = 0; i < returnParcels3.length; i++) {
 
                 /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock3, [returnParcels3[i]]);
+                if (!partnerProfile.architecture) partnerModule.parseResponse(1, adResponseMock3[i], [returnParcels3[i]]);
 
                 var result = inspector.validate({
                     type: 'object',
