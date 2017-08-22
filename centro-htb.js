@@ -158,7 +158,7 @@ function CentroHtb(configs) {
             s: xSlotRef.placement,
             adapter: 'indexexchange',
             sz: Size.arrayToString(xSlotRef.size),
-            url: xSlotRef.page_url || Browser.getPageUrl(),
+            url: Browser.getPageUrl(),
             callback: callbackId
             // rnd: System.generateUniqueId()
             // there is no needed rnd because parameter callback will be always different
@@ -172,24 +172,6 @@ function CentroHtb(configs) {
             callbackId: callbackId
         };
     }
-
-    /* =============================================================================
-     * STEP 3  | Response callback
-     * -----------------------------------------------------------------------------
-     *
-     * This generator is only necessary if the partner's endpoint has the ability
-     * to return an arbitrary ID that is sent to it. It should retrieve that ID from
-     * the response and save the response to adResponseStore keyed by that ID.
-     *
-     * If the endpoint does not have an appropriate field for this, set the profile's
-     * callback type to CallbackTypes.CALLBACK_NAME and omit this function.
-     */
-    function adResponseCallback(adResponse) {
-        /* get callbackId from adResponse here */
-        var callbackId = 0;
-        __baseClass._adResponseStore[callbackId] = adResponse;
-    }
-    /* -------------------------------------------------------------------------- */
 
     /* Helpers
      * ---------------------------------- */
@@ -264,7 +246,7 @@ function CentroHtb(configs) {
                  * key to a key that represents the placement in the configuration and in the bid responses.
                  */
 
-                if (unusedReturnParcels[j].xSlotRef.placement === (bid.sectionID || '').toString()) { // change this
+                if (bid.sectionID && unusedReturnParcels[j].xSlotRef.placement === bid.sectionID.toString()) { // change this
                     curReturnParcel = unusedReturnParcels[j];
                     unusedReturnParcels.splice(j, 1);
                     break;
@@ -277,12 +259,12 @@ function CentroHtb(configs) {
 
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
 
-            var bidPrice = bid.value * 100; // the bid price for the given slot
+            var bidPrice = bid.value; // the bid price for the given slot
             var bidWidth = bid.width; // the width of the given slot
             var bidHeight = bid.height; // the height of the given slot
             var bidCreative = bid.adTag; // the creative/adm for the given slot that will be rendered if is the winner.
             var bidDealId = ''; // the dealId if applicable for this slot.
-            var bidIsPass; // true/false value for if the module returned a pass for this slot.
+            var bidIsPass = false; // true/false value for if the module returned a pass for this slot.
 
             /* ---------------------------------------------------------------------------------------*/
 
@@ -485,8 +467,7 @@ function CentroHtb(configs) {
 
         __baseClass = Partner(__profile, configs, null, {
             parseResponse: __parseResponse,
-            generateRequestObj: __generateRequestObj,
-            adResponseCallback: adResponseCallback
+            generateRequestObj: __generateRequestObj
         });
     })();
 
@@ -520,7 +501,6 @@ function CentroHtb(configs) {
         render: __render,
         parseResponse: __parseResponse,
         generateRequestObj: __generateRequestObj,
-        adResponseCallback: adResponseCallback,
         //? }
     };
 

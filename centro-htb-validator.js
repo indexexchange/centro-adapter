@@ -49,24 +49,10 @@ var partnerValidator = function (configs) {
                                 type: 'array',
                                 exactLength: 2,
                                 items: { type: 'number' }
-                            },
-                            page_url: {
-                                type: 'string',
-                                optional: true
-                            },
-                            timeout: {
-                                type: 'number',
-                                gt: 0,
-                                optional: true
                             }
                         }
                     }
                 }
-            },
-            timeout: {
-                type: 'number',
-                gt: 0,
-                optional: true
             }
         }
     }, configs);
