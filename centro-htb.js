@@ -205,7 +205,7 @@ function CentroHtb(configs) {
      */
     function __parseResponse(sessionId, adResponse, returnParcels) {
 
-        var unusedReturnParcels = returnParcels.slice();
+        var curReturnParcel = returnParcels[0];
 
         /* =============================================================================
          * STEP 4  | Parse & store demand response
@@ -228,35 +228,9 @@ function CentroHtb(configs) {
 
         /* ---------- Proces adResponse and extract the bids into the bids array ------------*/
 
-        var bids = [adResponse];
+        var bid = adResponse;
 
-        /* --------------------------------------------------------------------------------- */
-
-        for (var i = 0; i < bids.length; i++) {
-
-            var curReturnParcel;
-            var bid = bids[i];
-
-            for (var j = unusedReturnParcels.length - 1; j >= 0; j--) {
-
-                /**
-                 * This section maps internal returnParcels and demand returned from the bid request.
-                 * In order to match them correctly, they must be matched via some criteria. This
-                 * is usually some sort of placements or inventory codes. Please replace the someCriteria
-                 * key to a key that represents the placement in the configuration and in the bid responses.
-                 */
-
-                if (bid.sectionID && unusedReturnParcels[j].xSlotRef.placement === bid.sectionID.toString()) { // change this
-                    curReturnParcel = unusedReturnParcels[j];
-                    unusedReturnParcels.splice(j, 1);
-                    break;
-                }
-            }
-
-            if (!curReturnParcel) {
-                continue;
-            }
-
+        if (bid.sectionID && curReturnParcel.xSlotRef.placement === bid.sectionID.toString()) { // change this
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
 
             var bidPrice = bid.value; // the bid price for the given slot
@@ -264,27 +238,8 @@ function CentroHtb(configs) {
             var bidHeight = bid.height; // the height of the given slot
             var bidCreative = bid.adTag; // the creative/adm for the given slot that will be rendered if is the winner.
             var bidDealId = ''; // the dealId if applicable for this slot.
-            var bidIsPass = false; // true/false value for if the module returned a pass for this slot.
 
             /* ---------------------------------------------------------------------------------------*/
-
-            if (bidIsPass) {
-                //? if (DEBUG) {
-                Scribe.info(__profile.partnerId + ' returned pass for { id: ' + adResponse.id + ' }.');
-                //? }
-                if (__profile.enabledAnalytics.requestTime) {
-                    EventsService.emit('hs_slot_pass', {
-                        sessionId: sessionId,
-                        statsId: __profile.statsId,
-                        htSlotId: curReturnParcel.htSlot.getId(),
-                        xSlotNames: [curReturnParcel.xSlotName]
-                    });
-                }
-
-                curReturnParcel.pass = true;
-
-                continue;
-            }
 
             if (__profile.enabledAnalytics.requestTime) {
                 EventsService.emit('hs_slot_bid', {
@@ -352,6 +307,8 @@ function CentroHtb(configs) {
             curReturnParcel.targeting.pubKitAdId = pubKitAdId;
             //? }
         }
+
+        /* --------------------------------------------------------------------------------- */
 
     }
 
@@ -421,7 +378,7 @@ function CentroHtb(configs) {
         var bidTransformerConfigs = {
             //? if (FEATURES.GPT_LINE_ITEMS) {
             targeting: {
-                inputCentsMultiplier: 1, // Input is in cents
+                inputCentsMultiplier: 100, // Input is in cents
                 outputCentsDivisor: 1, // Output as cents
                 outputPrecision: 0, // With 0 decimal places
                 roundingType: 'FLOOR', // jshint ignore:line
@@ -437,7 +394,7 @@ function CentroHtb(configs) {
             //? }
             //? if (FEATURES.RETURN_PRICE) {
             price: {
-                inputCentsMultiplier: 1, // Input is in cents
+                inputCentsMultiplier: 100, // Input is in cents
                 outputCentsDivisor: 1, // Output as cents
                 outputPrecision: 0, // With 0 decimal places
                 roundingType: 'NONE',
