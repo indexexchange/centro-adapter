@@ -90,7 +90,7 @@ function CentroHtb(configs) {
      */
     function __generateRequestObj(returnParcels) {
         var queryObj = {};
-        var baseUrl = Browser.getProtocol() + 't.brand-server.com/hb';
+        var baseUrl = Browser.getProtocol() + '//t.brand-server.com/hb';
         //var adUrl = '//staging.brand-server.com/hb';
         //var stageAdUrl = '//t.brand-server.com/hb';
         var callbackId = System.generateUniqueId();
